@@ -13,25 +13,11 @@ namespace UrlCompressWeb.Controllers
     public class HomeController : Controller
     {
 
-        private Dictionary<string, string> keyValuesUrls = new Dictionary<string, string>();
+        private static Dictionary<string, string> keyValuesUrls = new Dictionary<string, string>();
 
         public IActionResult Index()
         {
             return View();
-        }
-
-        private string CompressWebRrl(string longUrl)
-        {
-            string[] arr = ShortUrl(longUrl);
-            if (arr != null && arr.Length > 0)
-            {
-                foreach (var item in arr)
-                {
-                    keyValuesUrls[item] = longUrl;
-                }
-                return arr[0];
-            }
-            return string.Empty;
         }
 
         public IActionResult About()
@@ -53,6 +39,13 @@ namespace UrlCompressWeb.Controllers
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
 
+        [HttpPost]
+        public IActionResult CompressUrl(string longUrl)
+        {
+            string host = HttpContext.Request.Host.Value;
+            string url = host + "/" + CompressWebRrl(longUrl);
+            return Json(url);
+        }
 
         public static string[] ShortUrl(string url)
         {
@@ -99,13 +92,28 @@ namespace UrlCompressWeb.Controllers
             }
             return resUrl;
         }
-
-        [HttpPost]
-        public IActionResult CompressUrl(string longUrl)
+        private string CompressWebRrl(string longUrl)
         {
-            string host = HttpContext.Request.Host.Value;
-            string url = host + "/"+ CompressWebRrl(longUrl);
-            return Json(url);
+            string[] arr = ShortUrl(longUrl);
+            if (arr != null && arr.Length > 0)
+            {
+                foreach (var item in arr)
+                {
+                    keyValuesUrls[item] = longUrl;
+                }
+                return arr[0];
+            }
+            return string.Empty;
+        }
+
+        [Route("{url}")]
+        public IActionResult UrlJump(string url)
+        {
+            if (!string.IsNullOrEmpty(url) && keyValuesUrls.ContainsKey(url))
+            {
+                return Redirect(keyValuesUrls[url]);
+            }
+            return Redirect("Home/Index");
         }
     }
 }
